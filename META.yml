@@ -1,0 +1,57 @@
+---
+abstract: 'Lightning Fast Graphing/Visualization'
+author:
+  - 'Masahiro Nagano <kazeburo {at} gmail.com>'
+build_requires:
+  ExtUtils::MakeMaker: 6.59
+  Test::More: 0
+configure_requires:
+  ExtUtils::MakeMaker: 6.59
+distribution_type: module
+dynamic_config: 1
+generated_by: 'Module::Install version 1.06'
+license: perl
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: GrowthForecast
+no_index:
+  directory:
+    - inc
+    - t
+  file:
+    - views/add_complex.tx
+    - views/base.tx
+    - views/docs.tx
+    - views/edit.tx
+    - views/edit_complex.tx
+    - views/index.tx
+    - views/list.tx
+    - views/view.tx
+    - views/view_graph.tx
+    - public/css/bootstrap.min.css
+    - public/js/bootstrap-alerts.js
+    - public/js/bootstrap-modal.js
+    - public/js/html5jp/cpick.js
+    - public/js/jquery-1.5.2.min.js
+requires:
+  Alien::RRDtool: 0.03
+  DBD::SQLite: 1.33
+  DBIx::Sunny: 0.14
+  File::Zglob: 0.09
+  HTTP::Date: 0
+  Kossy: 0.10
+  List::MoreUtils: 0
+  Log::Minimal: 0.09
+  Plack::Builder::Conditionals: 0.03
+  Plack::Middleware::Scope::Container: 0.02
+  Proclet: 0.05
+  Scope::Container: 0.04
+  Scope::Container::DBI: 0.05
+  Starlet: 0.14
+  Time::Piece: 1.15
+  perl: 5.8.1
+resources:
+  license: http://dev.perl.org/licenses/
+  repository: git://github.com/kazeburo/GrowthForecast.git
+version: 0.37

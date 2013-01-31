@@ -1,0 +1,276 @@
+: cascade base
+: around page_header -> {
+<h1>Document and Usage</h1>
+: }
+
+: around content -> {
+
+<p style="text-align:right;font-size:1.2em;">Japanese document is <a href="http://kazeburo.github.com/GrowthForecast/">here</a>.</p>
+
+<h4>How to adding new Graph</h4>
+
+<p>Request to following URI with POST method</p>
+
+<pre>
+<: $c.req.uri_for('/') :>api/:service_name/:section_name/:graph_name
+</pre>
+
+<p>
+GrowthForecast is designed as a common Web-Graph-API that available from many services. Rrefer to the table below in relation to each item in the URI.</p>
+
+<table>
+<tr>
+<th>Item</th>
+<th>Role</th>
+<th>Example</th>
+</tr>
+<tr>
+<td>:service_name</td>
+<td>Service Name</td>
+<td>blogging_service, photosharing, socialgame, ninjya_taisen</td>
+</tr>
+<tr>
+<td>:section_name</td>
+<td>the Service's funtion or system name</td>
+<td>entry, user, spot, items</td>
+</tr>
+<tr>
+<td>:graph_name</td>
+<td>Specific contents</td>
+<td>total_entry, kakin_user, muryo_user, sold_syuriken</td>
+</tr>
+</table>
+
+<p>For example, to graph the number of shuriken that was sold in the ninja game</p>
+
+<pre>
+<: $c.req.uri_for('/') :>api/ninjya_taisen/items/sold_syuriken
+</pre>
+
+<p>Request to avove URI</p>
+
+<p>POST Parameters</p>
+
+<table>
+<tr>
+<th>Parameter</th>
+<th>Desc</th>
+<th>&nbsp;</th>
+</tr>
+<tr>
+<td>number</td>
+<td>Data that give to graph</td>
+<td>Required</td>
+</tr>
+<tr>
+<td>mode</td>
+<td>
+How to update a number. count or modified or gauge or derive.
+
+<dl>
+<dt>count</dt>
+<dd>Add the number and update</dd>
+
+<dt>modified</dt>
+<dd>Overwritten only when the numbers different from the previous</dd>
+
+<dt>gauge</dt>
+<dd>Always overwritten by the number</dd>
+
+<dt>derive</dt>
+<dd>Always overwritten by the number. To Display figures in per seconds</dd>
+</dl>
+
+Default is "gauge"<br />
+<strong>⚠</strong>
+The data type is determined at first time. Can't change mode from DERIVE to other and other to DERIVE.
+</td>
+<td>Option</td>
+</tr>
+<tr>
+<td>color</td>
+<td>Graph color, #FFFFFF format</td>
+<td>Option</td>
+</tr>
+</table>
+
+<p>Sample code (perl) </p>
+
+<pre>
+my $ua = LWP::UserAgent->new;
+$ua->post('<: $c.req.uri_for('/') :>api/ninjya_taisen/items/sold_syuriken', {
+    number      => 10,
+    color       => '#333399'
+});
+</pre>
+
+<p>Sample code (curl) </p>
+
+<pre>
+$ curl -F number=10 <: $c.req.uri_for('/') :>api/ninja_taisen/items/sold_syuriken
+</pre>
+
+<p>Incorporation of the graphed data is done once every 5 minutes or 1 minute. Please note that do not take effect immediately after POST</p>
+
+<h4>Arguments for displaying graphs</h4>
+
+<p>can customize graphs by giving some arguments for uri of a graph</p>
+
+<pre>
+URI of a graph <: $c.req.uri_for('/') :>graph/:service_name/:section_name/:graph_name
+URI of a comples graph  <: $c.req.uri_for('/') :>graph/:pattern
+</pre>
+
+<table>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+<tr>
+<td>t</td>
+<td>term. y(year), m(month), w(week), 3d(3days), s3d(3days・1min)、d(day)、sd(day・1min)、8h(8hours)、s8h(8hours・1min)、4h(4hours)、s4h(4hours・1min)、h(1hour)、sh(1hour・1min)、n(a half day)、sn(a half day・1min)、c(custom)、sc(custom・1min)</td>
+</tr>
+<tr>
+<td>from</td>
+<td>only when "term" is c or sc. datetime of start to display (for example: 2011/12/08 12:10:00)</td>
+</tr>
+<tr>
+<td>to</td>
+<td>only when "term" is c or sc. datetime of end to display (for example: 2011/12/08 12:10:00)</td>
+</tr>
+<tr>
+<td>gmode</td>
+<td>graph mode. "gauge" or "subtract". default is "gauge"</td>
+</tr>
+<tr>
+<td>width</td>
+<td>width of canvas.</td>
+</tr>
+<tr>
+<td>height</td>
+<td>height of canvas.</td>
+</tr>
+
+<tr>
+<td>graphonly</td>
+<td>only drawing graph. default is "0" (disable) </td>
+</tr>
+
+<tr>
+<td>logarithmic</td>
+<td>Drawing as logarithmic graph. default is "0" (disbale)</td>
+</tr>
+
+<tr>
+<td>xgrid</td>
+<td>x-axis label. see the document of rrdtool</td>
+</tr>
+
+<tr>
+<td>ygrid</td>
+<td>y-axis grid. see the document of rrdtool</td>
+</tr>
+
+<tr>
+<td>background_color</td>
+<td>background color. for example FFFFFF or FFFFFF00. last two character is alpha channel</td>
+</tr>
+
+<tr>
+<td>canvas_color</td>
+<td>background color of canvas.</td>
+</tr>
+
+<tr>
+<td>font_color</td>
+<td>font color.</td>
+</tr>
+
+<tr>
+<td>frame_color</td>
+<td>frame (around color spot) color</td>
+</tr>
+
+<tr>
+<td>axis_color</td>
+<td>axis color</td>
+</tr>
+
+<tr>
+<td>shadea_color</td>
+<td>color of left and top border</td>
+</tr>
+
+<tr>
+<td>shadeb_color</td>
+<td>color of right and bottom</td>
+</tr>
+
+<tr>
+<td>border</td>
+<td>Width in pixels for the 3d border</td>
+</tr>
+
+<tr>
+<td>legend</td>
+<td>displaying legend. default is "1" (enable)</td>
+</tr>
+
+<tr>
+<td>sumup</td>
+<td>displaying sumup figures in legend. default is "0" (disable)</td>
+</tr>
+
+
+</table>
+
+<h4>Exporting graph summary</h4>
+
+<p>can export data of legend as JSON format</p>
+
+<pre>
+Export URI <: $c.req.uri_for('/') :>summary/:service_name/:section_name/:graph_name
+Export URI of Complex graph <: $c.req.uri_for('/') :>summary/:pattern
+</pre>
+
+<p>supports same argumets as drawing graph</p>
+
+<h4>Exporting data of a graph</h4>
+
+<p>can export data of graph</p>
+
+<pre>
+Export URI <: $c.req.uri_for('/') :>xport/:service_name/:section_name/:graph_name
+Export URI of Complex graph <: $c.req.uri_for('/') :>xport/:pattern
+</pre>
+
+<table>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+<tr>
+<td>t</td>
+<td>term. y(year), m(month), w(week), 3d(3days), s3d(3days・1min)、d(day)、sd(day・1min)、8h(8hours)、s8h(8hours・1min)、4h(4hours)、s4h(4hours・1min)、h(1hour)、sh(1hour・1min)、n(a half day)、sn(a half day・1min)、c(custom)、sc(custom・1min)</td>
+</tr>
+<tr>
+<td>from</td>
+<td>only when "term" is c or sc. datetime of start to exporting (for example: 2011/12/08 12:10:00)</td>
+</tr>
+<tr>
+<td>to</td>
+<td>only when "term" is c or sc. datetime of end to exporting (for example: 2011/12/08 12:10:00)</td>
+</tr>
+<tr>
+<td>gmode</td>
+<td>graph mode. "gauge" or "subtract". default is "gauge"</td>
+</tr>
+<tr>
+<td>width</td>
+<td>max number of rows</td>
+</tr>
+</table>
+
+
+
+: }

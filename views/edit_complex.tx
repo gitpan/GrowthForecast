@@ -1,0 +1,187 @@
+: cascade base
+: around page_header -> {
+<h1>Edit Complex Graph</h1>
+: }
+
+
+: around content -> {
+
+<form id="complex-form" class="hxrpost" method="post" action="<: $c.req.uri_for('/edit_complex/'~$c.stash.complex.id) :>">
+
+<fieldset>
+
+: block form |  fillinform( $c.stash.complex ) -> {
+<div class="clearfix">
+<label for="">Path</label>
+<div class="input">
+<div class="inline-inputs">
+/ <input class="small" name="service_name" /> / <input class="small" name="section_name" /> / <input class="small" name="graph_name" />
+</div>
+<span class="help-block">Graph's URI(service name/section name/graph name)</span>
+</div>
+</div>
+
+<div class="clearfix">
+<label for="">Description</label>
+<div class="input">
+<input class="xlarge" name="description" />
+</div>
+</div>
+
+
+<div class="clearfix">
+<label for="">Display sum up value</label>
+<div class="input">
+<select name="sumup" class="small">
+<option value="0">しない</option>
+<option value="1">する</option>
+</select>
+</div>
+</div>
+
+
+<div class="clearfix">
+<label for="">Display order</label>
+<div class="input">
+<select name="sort" class="small">
+<option value="19">19</option>
+<option value="18">18</option>
+<option value="17">17</option>
+<option value="16">16</option>
+<option value="15">15</option>
+<option value="14">14</option>
+<option value="13">13</option>
+<option value="12">12</option>
+<option value="11">11</option>
+<option value="10">10</option>
+<option value="9">9</option>
+<option value="8">8</option>
+<option value="7">7</option>
+<option value="6">6</option>
+<option value="5">5</option>
+<option value="4">4</option>
+<option value="3">3</option>
+<option value="2">2</option>
+<option value="1">1</option>
+<option value="0">0</option>
+</select>
+<span class="help-block">19 is top</span>
+</div>
+</div>
+
+</fieldset>
+
+<fieldset>
+<legend>Data</legend>
+
+<div class="clearfix">
+<label for="">Series-1</label>
+<div class="input">
+
+<table class="bordered-table zebra-striped">
+<tr>
+<th class="span1">&nbsp;</th>
+<th class="span3">Type</th>
+<th class="span10">Path</th>
+<th class="span2" style="text-align: center">Mode</th>
+</tr>
+<tr>
+<td>&nbsp;</td>
+<td><select name="type-1" class="span3">
+<option value="AREA">AREA</option>
+<option value="LINE1">LINE</option>
+<option value="LINE2">LINE(Bold)</option>
+</select></td>
+<td><select name="path-1" class="span10">
+: for $graphs -> $graph {
+<option value="<: $graph.id :>">/<: $graph.service_name :>/<: $graph.section_name :>/<: $graph.graph_name :></option>
+: }
+</select></td>
+<td style="text-align: center"><select name="gmode-1" class="span2">
+<option value="gauge">Gauge</option>
+<option value="subtract">Subtract</option>
+</select></td>
+</tr>
+</table>
+</div>
+</div>
+
+: } # fillin
+
+<div class="clearfix">
+<label for="">Series-2 and more</label>
+<div class="input">
+
+<table class="bordered-table zebra-striped" id="add-data-tbl">
+<tr>
+<th class="span1">&nbsp;</th>
+<th class="span3">Type</th>
+<th class="span6">Path</th>
+<th class="span2" style="text-align:center;">Mode</th>
+<th class="span2" style="text-align:center;">Stack</th>
+<th class="span2" style="text-align:center;">&nbsp;</th>
+</tr>
+
+<tr>
+<td>&nbsp;</td>
+<td><select name="type-add" id="type-add" class="span3">
+<option value="AREA">AREA</option>
+<option value="LINE1">LINE</option>
+<option value="LINE2">LINE(Bold)</option>
+</select></t>
+<td><select name="path-add" id="path-add" class="span6">
+: for $graphs -> $graph {
+<option value="<: $graph.id :>">/<: $graph.service_name :>/<: $graph.section_name :>/<: $graph.graph_name :></option>
+: }
+</select></td>
+<td style="text-align: center"><select name="gmode-add" id="gmode-add" class="span2">
+<option value="gauge">Gauge</option>
+<option value="subtract">Subtract</option>
+</select></td>
+<td style="text-align:center;"><select name="stack-add" id="stack-add" class="span2">
+<option value="1">enable</option>
+<option value="0">disable</option>
+</select>
+</td>
+<td style="text-align:center;"><button id="add-new-row" class="btn" style="padding: 3px 14px 4px;">追加</button></td>
+</tr>
+
+: my $type_hash = { 'AREA' => 'AREA', 'LINE1' => 'LINE', 'LINE2' => 'LINE(Bold)' }
+: my $gmode_hash = { 'gauge' => 'Gauge', 'subtract' => 'Subtract' }
+: my $stack_hash = { '1' => 'enable', 'subtract' => 'disable' }
+: for $c.stash.complex.data_rows ->  $row {
+<tr class="can-table-order">
+<td><span class="table-order-pointer table-order-up">⬆</span><span class="table-order-pointer table-order-down">⬇</span></td>
+<td><: $type_hash[$row.type] :><input type="hidden" name="type-2" value="<: $row.type :>"/></td>
+<td>/<: $row.graph.service_name :>/<: $row.graph.section_name :>/<: $row.graph.graph_name :><input type="hidden" name="path-2" value="<: $row.path :>"/></td>
+<td style="text-align:center"><: $gmode_hash[$row.gmode] :><input type="hidden" name="gmode-2" value="<: $row.gmode :>" /></td>
+<td style="text-align:center"><: $stack_hash[$row.stack] :><input type="hidden" name="stack-2" value="<: $row.stack :>" /></td>
+<td style="text-align:center"><span class="table-order-remove">✖</span></td>
+</tr>
+: }
+
+</table>
+</div>
+</div>
+
+</fieldset>
+
+<fieldset>
+<legend>Preview</legend>
+<div class="clearfix">
+<label for="">&nbsp;</label>
+<div class="input">
+<div id="preview-graph"></div>
+</div>
+</div>
+</fieldset>
+
+<div class="actions">
+<input type="submit" class="btn primary" value="Submit" />
+<a href="<: $c.req.uri_for('/list/'~$c.stash.complex.service_name~'/'~$c.stash.complex.section_name) :>" class="btn">Cancel</a>
+<button type="button" class="btn danger hxr_confirm_button" data-confirm="Remove '<: $c.stash.complex.graph_name :>'?" data-uri="<: $c.req.uri_for('/delete_complex/'~$c.stash.complex.id) :>">Remove</button>
+</div>
+
+</form>
+: }
+

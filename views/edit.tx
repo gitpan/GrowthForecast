@@ -1,0 +1,153 @@
+: cascade base
+: around page_header -> {
+<h1>Edit Graph</h1>
+: }
+
+: around content -> {
+
+: block form |  fillinform( $graph ) -> {
+
+<form class="hxrpost" method="post" action="<: $c.req.uri_for('/edit/'~$graph.service_name~'/'~$graph.section_name~'/'~$graph.graph_name) :>">
+
+<fieldset>
+
+<div class="clearfix">
+<label for="">Path</label>
+<div class="input">
+<div class="inline-inputs">
+/ <input class="small" name="service_name" /> / <input class="small" name="section_name" /> / <input class="small" name="graph_name" />
+</div>
+<span class="help-block">Graph's URI(service name/section name/graph name)</span>
+</div>
+</div>
+
+<div class="clearfix">
+<label for="">Description</label>
+<div class="input">
+<input class="xlarge" name="description" />
+</div>
+</div>
+
+<div class="clearfix">
+<label for="">Display order</label>
+<div class="input">
+<select name="sort" class="small">
+<option value="19">19</option>
+<option value="18">18</option>
+<option value="17">17</option>
+<option value="16">16</option>
+<option value="15">15</option>
+<option value="14">14</option>
+<option value="13">13</option>
+<option value="12">12</option>
+<option value="11">11</option>
+<option value="10">10</option>
+<option value="9">9</option>
+<option value="8">8</option>
+<option value="7">7</option>
+<option value="6">6</option>
+<option value="5">5</option>
+<option value="4">4</option>
+<option value="3">3</option>
+<option value="2">2</option>
+<option value="1">1</option>
+<option value="0">0</option>
+</select>
+<span class="help-block">19 is top</span>
+</div>
+</div>
+
+<div class="clearfix">
+<label for="">Mode</label>
+<div class="input">
+<select name="gmode" class="medium">
+<option value="gauge">Gauge</option>
+<option value="subtract"Subtract></option>
+<option value="both">Both</option>
+</select>
+</div>
+</div>
+
+<div class="clearfix">
+<label for="">Adjustment</label>
+<div class="input">
+<div class="inline-inputs">
+値
+<select name="adjust" class="small">
+<option value="*">×</option>
+<option value="/">÷</option>
+</select>
+<input class="small" name="adjustval" />
+unit
+<input class="small" name="unit" />
+</div>
+</div>
+</div>
+
+<div class="clearfix">
+<label for="">Color</label>
+<div class="input">
+<input name="color" id="form-<: $index :>-color" class="small color_pallet" />
+<span class="help-block">#000000-#FFFFFF</span>
+</div>
+</div>
+
+<div class="clearfix">
+<label for="">Type</label>
+<div class="input">
+<select name="type" class="medium">
+<option value="AREA">AREA</option>
+<option value="LINE1">LINE</option>
+<option value="LINE2">LINE(Bold)</option>
+</select>
+</div>
+</div>
+
+<div class="clearfix">
+<label for="">Effective range</label>
+<div class="input">
+<div class="inline-inputs">
+<input class="medium" name="llimit" />
+〜
+<input class="medium" name="ulimit" />
+</div>
+</div>
+</div>
+
+<div class="clearfix">
+<label for="">Mode of subtract Graph</label>
+<div class="input">
+<select name="stype" class="medium">
+<option value="AREA">AREA</option>
+<option value="LINE1">LINE</option>
+<option value="LINE2">LINE(Bold)</option>
+</select>
+</div>
+</div>
+
+
+<div class="clearfix">
+<label for="">Effective range of subtract Graph</label>
+<div class="input">
+<div class="inline-inputs">
+<input class="medium" name="sllimit" />
+〜
+<input class="medium" name="sulimit" />
+</div>
+</div>
+</div>
+
+</fieldset>
+
+<div class="actions">
+<input type="submit" class="btn primary" value="Submit" />
+<a href="<: $c.req.uri_for('/list/'~$graph.service_name~'/'~$graph.section_name) :>" class="btn">Cancel</a>
+<button type="button" class="btn danger hxr_confirm_button" data-confirm="remove '<: $graph.graph_name :>'?" data-uri="<: $c.req.uri_for('/delete/'~$graph.service_name~'/'~$graph.section_name~'/'~$graph.graph_name) :>">remove</button>
+</div>
+
+</form>
+: } # fillin
+
+
+: }
+

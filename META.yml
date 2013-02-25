@@ -4,13 +4,13 @@ author:
   - 'Masahiro Nagano <kazeburo {at} gmail.com>'
 build_requires:
   ExtUtils::MakeMaker: 6.59
-  Test::More: 0
-  Test::Requires: 0
+  Test::More: 0.96
+  Test::Requires: 0.06
 configure_requires:
+  CPAN::Meta: 0
   ExtUtils::MakeMaker: 6.59
-distribution_type: module
-dynamic_config: 1
-generated_by: 'Module::Install version 1.06'
+dynamic_config: 0
+generated_by: 'Module::Install version 1.06, CPAN::Meta::Converter version 2.120921'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -51,8 +51,8 @@ requires:
   Scope::Container::DBI: 0.05
   Starlet: 0.14
   Time::Piece: 1.15
-  perl: 5.8.1
+  perl: v5.8.1
 resources:
   license: http://dev.perl.org/licenses/
   repository: git://github.com/kazeburo/GrowthForecast.git
-version: 0.39
+version: 0.40

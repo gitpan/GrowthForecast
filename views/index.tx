@@ -1,4 +1,8 @@
 : cascade base
+: around page_title -> {
+<: if $c.args.service_name { :> <: $c.args.service_name :> | <: super :><: } :>
+: }
+
 : around page_header -> {
 <h1>
 <a href="<: $c.req.uri_for('/') :>">Home</a><: if $c.args.service_name { :> » <: $c.args.service_name :><: } :>
@@ -14,7 +18,7 @@
 <table class="zebra-striped">
 : for $service.sections -> $section {
 <tr>
-<td><a href="<: $c.req.uri_for('/list/'~$service.name~'/'~$section) :>"><: $section :></a></td>
+<td style="vertical-align: middle"><a href="<: $c.req.uri_for('/list/'~$service.name~'/'~$section) :>"><: $section :></a></td>
 </tr>
 : }
 </table>

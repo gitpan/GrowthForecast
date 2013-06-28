@@ -10,6 +10,7 @@ use GrowthForecast::Data;
 use GrowthForecast::RRD;
 use Log::Minimal;
 use Class::Accessor::Lite ( rw => [qw/short mysql data_dir/] );
+use CGI;
 
 sub data {
     my $self = shift;
@@ -65,6 +66,27 @@ filter 'get_complex' => sub {
     }
 };
 
+sub delete_graph {
+    my ( $self, $c ) = @_;
+    $self->data->remove($c->stash->{graph}->{id});
+    $self->rrd->remove($c->stash->{graph});
+
+    $c->render_json({
+        error => 0,
+        location => "".$c->req->uri_for(sprintf('/list/%s/%s', map { CGI::escape($c->stash->{graph}->{$_}) } qw/service_name section_name/))
+    });
+};
+
+sub delete_complex {
+    my ( $self, $c ) = @_;
+    $self->data->remove_complex($c->stash->{complex}->{id});
+
+    $c->render_json({
+        error => 0,
+        location => "". $c->req->uri_for(sprintf('/list/%s/%s', map { CGI::escape($c->stash->{complex}->{$_}) } qw/service_name section_name/))
+    });
+};
+
 get '/' => sub {
     my ( $self, $c )  = @_;
     my $services = $self->data->get_services();
@@ -99,11 +121,7 @@ get '/edit_complex/:complex_id' => [qw/get_complex/] => sub {
 
 post '/delete_complex/:complex_id' => [qw/get_complex/] => sub {
     my ( $self, $c )  = @_;
-    $self->data->remove_complex($c->stash->{complex}->{id});
-    $c->render_json({
-        error => 0,
-        location => "". $c->req->uri_for(sprintf('/list/%s/%s', map { $c->stash->{complex}->{$_} } qw/service_name section_name/))
-    });
+    $self->delete_complex( $c );
 };
 
 sub check_uniq_complex {
@@ -225,7 +243,7 @@ post '/add_complex' => sub {
 
     $c->render_json({
         error => 0,
-        location => $c->req->uri_for('/list/'.$result->valid('service_name').'/'.$result->valid('section_name'))->as_string,
+        location => $c->req->uri_for('/list/'.CGI::escape($result->valid('service_name')).'/'.CGI::escape($result->valid('section_name')))->as_string,
     });
 };
 
@@ -329,7 +347,7 @@ post '/edit_complex/:complex_id' => [qw/get_complex/] => sub {
 
     $c->render_json({
         error => 0,
-        location => $c->req->uri_for( sprintf '/view_complex/%s/%s/%s', $result->valid('service_name'), $result->valid('section_name'), $result->valid('graph_name') )->as_string,
+        location => $c->req->uri_for( sprintf '/view_complex/%s/%s/%s', CGI::escape($result->valid('service_name')), CGI::escape($result->valid('section_name')), CGI::escape($result->valid('graph_name')) )->as_string,
     });
 };
 
@@ -531,6 +549,50 @@ my $GRAPH_VALIDATOR = [
     },
 ];
 
+get '/complex/{method:(?:xport|graph|summary)}/:service_name/:section_name/:graph_name' => sub {
+    my ( $self, $c )  = @_;
+    my $result = $c->req->validator($GRAPH_VALIDATOR);
+    my $complex = $self->data->get_complex(
+        $c->args->{service_name}, $c->args->{section_name}, $c->args->{graph_name},
+    );
+    $c->halt(404) unless $complex;
+
+    my @data;
+    $data[0] = $self->data->get_by_id($complex->{'path-1'});
+    $data[0]->{c_type} = $complex->{'type-1'};
+    $data[0]->{c_gmode} = $complex->{'gmode-1'};
+    $data[0]->{stack} = 0;
+
+    for my $row (@{$complex->{data_rows}}){
+      my $data = $row->{graph};
+      $data->{c_type} = $row->{type};
+      $data->{c_gmode} = $row->{gmode};
+      $data->{stack} = $row->{stack};
+      push @data, $data;
+    }
+
+    if ( $c->args->{method} eq 'graph' ) {
+        my ($img,$data) = $self->rrd->graph(
+            \@data, $result->valid->as_hashref
+        );
+        $c->res->content_type('image/png');
+        $c->res->body($img);
+    }
+    elsif ( $c->args->{method} eq 'summary' ) {
+        my ($img,$data) = $self->rrd->graph(
+            \@data, $result->valid->as_hashref
+        );
+        $c->render_json($data);
+    }
+    else {
+        my $data = $self->rrd->export(
+            \@data, $result->valid->as_hashref
+        );
+        $c->render_json($data);
+    }
+    return $c->res;
+};
+
 get '/{method:(?:xport|graph|summary)}/:complex' => sub {
     my ( $self, $c )  = @_;
     my $result = $c->req->validator($GRAPH_VALIDATOR);
@@ -728,7 +790,7 @@ post '/edit/:service_name/:section_name/:graph_name' => [qw/get_graph/] => sub {
 
     $c->render_json({
         error => 0,
-        location => $c->req->uri_for( sprintf '/view_graph/%s/%s/%s', $result->valid('service_name'), $result->valid('section_name'), $result->valid('graph_name') )->as_string
+        location => $c->req->uri_for( sprintf '/view_graph/%s/%s/%s', CGI::escape($result->valid('service_name')), CGI::escape($result->valid('section_name')), CGI::escape($result->valid('graph_name')) )->as_string
     });
 };
 
@@ -739,26 +801,24 @@ post '/delete/:service_name/:section_name' => [qw/set_enable_short/] => sub {
         $c->args->{service_name}, $c->args->{section_name}
     );
     for my $g (@$graphs) {
-        $self->data->remove($g->{id});
-        $self->rrd->remove($g);
+        if ( exists $g->{complex_graph} ) {
+            $self->data->remove_complex($g->{id});
+        }
+        else {
+            $self->data->remove($g->{id});
+            $self->rrd->remove($g);
+        }
     }
 
     $c->render_json({
         error => 0,
-        location => "".$c->req->uri_for(sprintf('/list/%s', $c->args->{service_name}))
+        location => "".$c->req->uri_for(sprintf('/list/%s', CGI::escape($c->args->{service_name})))
     });
 };
 
 post '/delete/:service_name/:section_name/:graph_name' => [qw/get_graph/] => sub {
     my ( $self, $c )  = @_;
-
-    $self->data->remove($c->stash->{graph}->{id});
-    $self->rrd->remove($c->stash->{graph});
-
-    $c->render_json({
-        error => 0,
-        location => "".$c->req->uri_for(sprintf('/list/%s/%s', map { $c->args->{$_} } qw/service_name section_name/))
-    });
+    $self->delete_graph( $c );
 };
 
 get '/api/:service_name/:section_name/:graph_name' => [qw/get_graph/] => sub {
@@ -906,6 +966,49 @@ sub graph4internal {
     $internal;
 }
 
+# alias to /api/:service_name/:section_name/:graph_name
+get '/json/graph/:service_name/:section_name/:graph_name' => [qw/get_graph/] => sub {
+    my ( $self, $c )  = @_;
+    $c->render_json($c->stash->{graph});
+};
+
+get '/json/complex/:service_name/:section_name/:graph_name' => sub {
+    my ( $self, $c ) = @_;
+    my $complex = $self->data->get_complex( $c->args->{service_name}, $c->args->{section_name}, $c->args->{graph_name} );
+    $c->halt(404) unless $complex;
+    $c->render_json( $self->graph4json( $complex ) );
+};
+
+# alias to /delete/:service_name/:section_name/:graph_name
+post '/json/delete/graph/:service_name/:section_name/:graph_name' => [qw/get_graph/] => sub {
+    my ( $self, $c )  = @_;
+    $self->delete_graph( $c );
+};
+
+post '/json/delete/complex/:service_name/:section_name/:graph_name' => sub {
+    my ( $self, $c )  = @_;
+    my $complex = $self->data->get_complex( $c->args->{service_name}, $c->args->{section_name}, $c->args->{graph_name} );
+    $c->halt(404) unless $complex;
+    $c->stash->{complex} = $complex;
+
+    $self->delete_complex( $c );
+};
+
+post '/json/delete/graph/:id' => sub {
+    my ( $self, $c ) = @_;
+    my $graph = $self->data->get_by_id( $c->args->{id} );
+    $c->halt(404) unless $graph;
+    $c->stash->{graph} = $graph;
+
+    $self->delete_graph( $c );
+};
+
+# alias to /delete_complex/:complex_id
+post '/json/delete/complex/:complex_id' => [qw/get_complex/] => sub {
+    my ( $self, $c ) = @_;
+    $self->delete_complex( $c );
+};
+
 get '/json/graph/:id' => sub {
     my ( $self, $c ) = @_;
     my $graph = $self->data->get_by_id( $c->args->{id} );
@@ -977,7 +1080,7 @@ post '/json/create/complex' => sub {
     );
     $c->render_json({
         error => 0,
-        location => $c->req->uri_for('/list/'.$spec->{service_name}.'/'.$spec->{section_name})->as_string,
+        location => $c->req->uri_for('/list/'.CGI::escape($spec->{service_name}).'/'.CGI::escape($spec->{section_name}))->as_string,
     });
 };
 

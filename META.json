@@ -4,7 +4,7 @@
       "Masahiro Nagano <kazeburo {at} gmail.com>"
    ],
    "dynamic_config" : "0",
-   "generated_by" : "Module::Install version 1.06, CPAN::Meta::Converter version 2.120921",
+   "generated_by" : "Module::Install version 1.06, CPAN::Meta::Converter version 2.130880",
    "license" : [
       "perl_5"
    ],
@@ -58,6 +58,7 @@
             "List::MoreUtils" : "0",
             "Log::Minimal" : "0.09",
             "Plack::Builder::Conditionals" : "0.03",
+            "Plack::Middleware::AxsLog" : "0.10",
             "Plack::Middleware::Scope::Container" : "0.02",
             "Proclet" : "0.05",
             "Scope::Container" : "0.04",
@@ -84,5 +85,5 @@
          "url" : "git://github.com/kazeburo/GrowthForecast.git"
       }
    },
-   "version" : "0.50"
+   "version" : "0.62"
 }

@@ -8,7 +8,7 @@ use base qw/Module::Install::Base/;
 use File::Spec;
 use File::Spec::Unix;
 
-our $VERSION = '0.02';
+our $VERSION = '0.04';
 
 sub install_sharefile {
     my $self = shift;

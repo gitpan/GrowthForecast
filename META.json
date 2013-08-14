@@ -49,12 +49,12 @@
       },
       "runtime" : {
          "requires" : {
-            "Alien::RRDtool" : "0.03",
+            "Alien::RRDtool" : "0.05",
             "DBD::SQLite" : "1.33",
             "DBIx::Sunny" : "0.14",
             "File::Zglob" : "0.09",
             "HTTP::Date" : "0",
-            "Kossy" : "0.10",
+            "Kossy" : "0.18",
             "List::MoreUtils" : "0",
             "Log::Minimal" : "0.09",
             "Plack::Builder::Conditionals" : "0.03",
@@ -85,5 +85,5 @@
          "url" : "git://github.com/kazeburo/GrowthForecast.git"
       }
    },
-   "version" : "0.62"
+   "version" : "0.70"
 }

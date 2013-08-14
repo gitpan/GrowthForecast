@@ -9,16 +9,21 @@ use Time::Piece;
 use GrowthForecast::Data;
 use GrowthForecast::RRD;
 use Log::Minimal;
-use Class::Accessor::Lite ( rw => [qw/short mysql data_dir/] );
+use Class::Accessor::Lite ( rw => [qw/short mysql data_dir float_number rrdcached/] );
 use CGI;
 
 sub data {
     my $self = shift;
     $self->{__data} ||= 
         $self->mysql 
-            ? GrowthForecast::Data::MySQL->new($self->mysql)
-            : GrowthForecast::Data->new($self->data_dir);
+            ? GrowthForecast::Data::MySQL->new($self->mysql, $self->float_number)
+            : GrowthForecast::Data->new($self->data_dir, $self->float_number);
     $self->{__data};
+}
+
+sub number_type {
+    my $self = shift;
+    return $self->{'float_number'} ? 'REAL' : 'INT';
 }
 
 sub rrd {
@@ -26,6 +31,7 @@ sub rrd {
     $self->{__rrd} ||= GrowthForecast::RRD->new(
         data_dir => $self->data_dir,
         root_dir => $self->root_dir,
+        rrdcached => $self->rrdcached,
     );
     $self->{__rrd};
 }
@@ -752,25 +758,25 @@ post '/edit/:service_name/:section_name/:graph_name' => [qw/get_graph/] => sub {
         'llimit' => {
             rule => [
                 ['NOT_NULL', 'missing'],
-                ['INT', 'a integral number is required'],
+                [$self->number_type, 'a ' . $self->number_type . ' number is required'],
             ],
         },
         'ulimit' => {
             rule => [
                 ['NOT_NULL', 'missing'],
-                ['INT', 'a integral number is required'],
+                [$self->number_type, 'a ' . $self->number_type . ' number is required'],
             ],
         },
         'sllimit' => {
             rule => [
                 ['NOT_NULL', 'missing'],
-                ['INT', 'a integral number is required'],
+                [$self->number_type, 'a ' . $self->number_type . ' number is required'],
             ],
         },
         'sulimit' => {
             rule => [
                 ['NOT_NULL', 'missing'],
-                ['INT', 'a integral number is required'],
+                [$self->number_type, 'a ' . $self->number_type . ' number is required'],
             ],
         },
     ]);
@@ -832,7 +838,7 @@ post '/api/:service_name/:section_name/:graph_name' => sub {
         'number' => {
             rule => [
                 ['NOT_NULL','number is missing'],
-                ['INT','a integral number is required for "number"']
+                [$self->number_type, 'a ' . $self->number_type . ' number is required for "number"']
             ],
         },
         'mode' => {

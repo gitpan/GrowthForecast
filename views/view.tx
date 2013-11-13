@@ -1,5 +1,8 @@
 : my $term_arg = $c.req.param('t') ? [ 't', $c.req.param('t') ] : [];
 <h2>
+: if ! $c.args.graph_name {
+<span><small style="vertical-align: text-middle;font-size: 0.5em"><a href="#graph_<: $graph.graph_name :>" data-toggle="collapse">[+]</a></small></span>
+: }
 : if $graph.complex_graph {
 <a href="<: $c.req.uri_for('/view_complex/'~uri_escape($graph.service_name)~'/'~uri_escape($graph.section_name)~'/'~uri_escape($graph.graph_name), $term_arg) :>" data-id="<: $graph.id :>"><: $graph.graph_name :></a>
 : } else {
@@ -8,10 +11,10 @@
 <small><: $graph.description :></small></h2>
 <p>
 : if $graph.complex_graph {
-<a class="label success" style="cursor: pointer" href="<: $c.req.uri_for('/edit_complex/'~$graph.id) :>">Setting</a>
-<span class="label important">Complex Graph</span>
+<a class="label label-success" style="cursor: pointer" href="<: $c.req.uri_for('/edit_complex/'~$graph.id) :>">Setting</a>
+<span class="label label-important">Complex Graph</span>
 : } else {
-<a class="label success" style="cursor: pointer" href="<: $c.req.uri_for('/edit/'~uri_escape($graph.service_name)~'/'~uri_escape($graph.section_name)~'/'~uri_escape($graph.graph_name)) :>">Setting</a>
+<a class="label label-success" style="cursor: pointer" href="<: $c.req.uri_for('/edit/'~uri_escape($graph.service_name)~'/'~uri_escape($graph.section_name)~'/'~uri_escape($graph.graph_name)) :>">Setting</a>
 <span class="label">current</span> <: $graph.number | format_number :>
 <span class="label">mode</span> <: $graph.mode :>
 : }
@@ -19,7 +22,7 @@
 <span class="label">updated_at</span> <: $graph.updated_at :>
 </p>
 
-<div style="margin-bottom: 13px; text-align: center">
+<div id="graph_<: $graph.graph_name :>" class="section_graphs collapse in" style="margin-bottom: 13px; text-align: center">
 : if ! $graph.complex_graph {
   : my $gmodes = ( $graph.gmode == 'both' ) ? ['gauge','subtract'] : ( $graph.gmode == 'gauge') ? ['gauge'] : ['subtract']
   : for $gmodes -> $gmode {

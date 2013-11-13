@@ -4,7 +4,7 @@
       "Masahiro Nagano <kazeburo {at} gmail.com>"
    ],
    "dynamic_config" : "0",
-   "generated_by" : "Module::Install version 1.06, CPAN::Meta::Converter version 2.130880",
+   "generated_by" : "Module::Install version 1.06, CPAN::Meta::Converter version 2.132830",
    "license" : [
       "perl_5"
    ],
@@ -29,10 +29,10 @@
          "views/view.tx",
          "views/view_graph.tx",
          "public/css/bootstrap.min.css",
-         "public/js/bootstrap-alerts.js",
+         "public/js/bootstrap-alert.js",
          "public/js/bootstrap-modal.js",
          "public/js/html5jp/cpick.js",
-         "public/js/jquery-1.5.2.min.js"
+         "public/js/jquery-1.10.2.min.js"
       ]
    },
    "prereqs" : {
@@ -50,21 +50,26 @@
       "runtime" : {
          "requires" : {
             "Alien::RRDtool" : "0.05",
+            "Class::Accessor::Lite" : "0",
             "DBD::SQLite" : "1.33",
             "DBIx::Sunny" : "0.14",
             "File::Zglob" : "0.09",
             "HTTP::Date" : "0",
-            "Kossy" : "0.18",
+            "HTTP::Parser::XS" : "0.16",
+            "JSON" : "2",
+            "JSON::XS" : "0",
+            "Kossy" : "0.27",
             "List::MoreUtils" : "0",
-            "Log::Minimal" : "0.09",
+            "Log::Minimal" : "0.16",
             "Plack::Builder::Conditionals" : "0.03",
-            "Plack::Middleware::AxsLog" : "0.10",
-            "Plack::Middleware::Scope::Container" : "0.02",
-            "Proclet" : "0.05",
+            "Plack::Middleware::AxsLog" : "0.13",
+            "Plack::Middleware::Scope::Container" : "0.04",
+            "Proclet" : "0.31",
             "Scope::Container" : "0.04",
-            "Scope::Container::DBI" : "0.05",
-            "Starlet" : "0.14",
+            "Scope::Container::DBI" : "0.09",
+            "Starlet" : "0.20",
             "Time::Piece" : "1.15",
+            "URL::Encode::XS" : "0",
             "perl" : "v5.8.1"
          }
       },
@@ -85,5 +90,5 @@
          "url" : "git://github.com/kazeburo/GrowthForecast.git"
       }
    },
-   "version" : "0.70"
+   "version" : "0.71"
 }

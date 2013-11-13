@@ -73,6 +73,10 @@ OPTIONS
         See the manual of rrdcached for more details. Default does not use
         rrdcached.
 
+    --mount
+        Provide GrowthForecast with specify url path. Default is empty (
+        provide GrowthForecast on root path )
+
     -h --help
         Display help
 

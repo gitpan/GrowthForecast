@@ -31,12 +31,15 @@ no_index:
     - views/view.tx
     - views/view_graph.tx
     - public/css/bootstrap.min.css
-    - public/js/bootstrap-alert.js
-    - public/js/bootstrap-collapse.js
-    - public/js/bootstrap-modal.js
-    - public/js/bootstrap-transition.js
-    - public/js/html5jp/cpick.js
+    - public/favicon.ico
+    - public/fonts/glyphicons-halflings-regular.eot
+    - public/fonts/glyphicons-halflings-regular.svg
+    - public/fonts/glyphicons-halflings-regular.ttf
+    - public/fonts/glyphicons-halflings-regular.woff
+    - public/js/bootstrap.min.js
     - public/js/jquery-1.10.2.min.js
+    - public/js/jquery.storageapi.min.js
+    - public/js/site.js
 requires:
   Alien::RRDtool: 0.05
   Class::Accessor::Lite: 0
@@ -56,11 +59,11 @@ requires:
   Proclet: 0.31
   Scope::Container: 0.04
   Scope::Container::DBI: 0.09
-  Starlet: 0.20
+  Starlet: 0.21
   Time::Piece: 1.15
   URL::Encode::XS: 0
   perl: v5.8.1
 resources:
   license: http://dev.perl.org/licenses/
   repository: git://github.com/kazeburo/GrowthForecast.git
-version: 0.72
+version: 0.80

@@ -110,6 +110,7 @@ get '/' => sub {
 
 get '/docs' => sub {
     my ( $self, $c )  = @_;
+    $c->stash->{docs} = 1;
     $c->render('docs.tx',{});
 };
 
@@ -551,6 +552,18 @@ my $GRAPH_VALIDATOR = [
         default => 0,
         rule => [
             [['CHOICE',qw/0 1/],'invalid sumup flag'],
+        ],
+    },
+    'step' => {
+        default => '',
+        rule => [
+            ['NATURAL', 'invalid step size'],
+        ],
+    },
+    'cf' => {
+        default => 'AVERAGE',
+        rule => [
+            [['CHOICE', qw/AVERAGE MAX/], 'invalid consolidation function'],
         ],
     },
 ];

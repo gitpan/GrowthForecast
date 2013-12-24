@@ -39,6 +39,10 @@ OPTIONS
     --host
         IP address to listen on
 
+    --socket
+        File path to UNIX domain socket to bind. If enabled unix domain
+        socket, GrowthForecast does not bind any TCP port
+
     --front-proxy
         IP addresses or CIDR of reverse proxy
 

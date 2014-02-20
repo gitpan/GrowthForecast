@@ -38,6 +38,7 @@ no_index:
     - public/fonts/glyphicons-halflings-regular.woff
     - public/js/bootstrap.min.js
     - public/js/jquery-1.10.2.min.js
+    - public/js/jquery-1.10.2.min.map
     - public/js/jquery.storageapi.min.js
     - public/js/site.js
 requires:
@@ -66,4 +67,4 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: git://github.com/kazeburo/GrowthForecast.git
-version: 0.80
+version: 0.81

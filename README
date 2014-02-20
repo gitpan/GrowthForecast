@@ -53,6 +53,9 @@ OPTIONS
     --disable-1min-metrics
         don't generate 1min rrddata and graph Default is "1" (enabled)
 
+    --disable-subtract
+        Disable gmode `subtract`. Default is "1" (enabled)
+
     --enable-float-number
         Store numbers of graph data as float rather than integer. Default is
         "0" (disabled)

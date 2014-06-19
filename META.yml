@@ -3,18 +3,18 @@ abstract: 'Lightning Fast Graphing/Visualization'
 author:
   - 'Masahiro Nagano <kazeburo {at} gmail.com>'
 build_requires:
-  ExtUtils::MakeMaker: 6.59
-  Test::More: 0.96
-  Test::Requires: 0.06
+  ExtUtils::MakeMaker: '6.59'
+  Test::More: '0.96'
+  Test::Requires: '0.06'
 configure_requires:
-  CPAN::Meta: 0
-  ExtUtils::MakeMaker: 6.59
-dynamic_config: 0
-generated_by: 'Module::Install version 1.06, CPAN::Meta::Converter version 2.132830'
+  CPAN::Meta: '0'
+  ExtUtils::MakeMaker: '6.59'
+dynamic_config: '0'
+generated_by: 'Module::Install version 1.08, CPAN::Meta::Converter version 2.141170'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
-  version: 1.4
+  version: '1.4'
 name: GrowthForecast
 no_index:
   directory:
@@ -42,29 +42,29 @@ no_index:
     - public/js/jquery.storageapi.min.js
     - public/js/site.js
 requires:
-  Alien::RRDtool: 0.05
-  Class::Accessor::Lite: 0
-  DBD::SQLite: 1.33
-  DBIx::Sunny: 0.14
-  File::Zglob: 0.09
-  HTTP::Date: 0
-  HTTP::Parser::XS: 0.16
-  JSON: 2
-  JSON::XS: 0
-  Kossy: 0.27
-  List::MoreUtils: 0
-  Log::Minimal: 0.16
-  Plack::Builder::Conditionals: 0.03
-  Plack::Middleware::AxsLog: 0.13
-  Plack::Middleware::Scope::Container: 0.04
-  Proclet: 0.31
-  Scope::Container: 0.04
-  Scope::Container::DBI: 0.09
-  Starlet: 0.21
-  Time::Piece: 1.15
-  URL::Encode::XS: 0
+  Alien::RRDtool: '0.05'
+  Class::Accessor::Lite: '0'
+  DBD::SQLite: '1.33'
+  DBIx::Sunny: '0.14'
+  File::Zglob: '0.09'
+  HTTP::Date: '0'
+  HTTP::Parser::XS: '0.16'
+  JSON: '2'
+  JSON::XS: '0'
+  Kossy: '0.37'
+  List::MoreUtils: '0'
+  Log::Minimal: '0.16'
+  Plack::Builder::Conditionals: '0.03'
+  Plack::Middleware::AxsLog: '0.13'
+  Plack::Middleware::Scope::Container: '0.04'
+  Proclet: '0.31'
+  Scope::Container: '0.04'
+  Scope::Container::DBI: '0.09'
+  Starlet: '0.21'
+  Time::Piece: '1.15'
+  URI::Escape: '0'
   perl: v5.8.1
 resources:
   license: http://dev.perl.org/licenses/
   repository: git://github.com/kazeburo/GrowthForecast.git
-version: 0.81
+version: '0.82'

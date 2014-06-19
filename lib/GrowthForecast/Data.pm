@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS graphs (
     meta         TEXT,
     created_at   UNSIGNED INT NOT NULL,
     updated_at   UNSIGNED INT NOT NULL,
+    timestamp    UNSIGNED INT DEFAULT NULL,
     UNIQUE  (service_name, section_name, graph_name)
 )
 EOF
@@ -108,6 +109,46 @@ CREATE TABLE IF NOT EXISTS complex_graphs (
     UNIQUE  (service_name, section_name, graph_name)
 )
 EOF
+
+        $dbh->do(<<EOF);
+CREATE TABLE IF NOT EXISTS vrules (
+    id           INTEGER NOT NULL PRIMARY KEY,
+    graph_path   VARCHAR(255) NOT NULL,
+    time         INT UNSIGNED NOT NULL,
+    color        VARCHAR(255) NOT NULL DEFAULT '#FF0000',
+    description  TEXT,
+    dashes       VARCHAR(255) NOT NULL DEFAULT ''
+)
+EOF
+        $dbh->do(<<EOF);
+CREATE INDEX IF NOT EXISTS time_graph_path on vrules (time, graph_path)
+EOF
+
+        {
+            $dbh->begin_work;
+            my $columns = $dbh->select_all(q{PRAGMA table_info("vrules")});
+            my %graphs_columns;
+            $graphs_columns{$_->{name}} = 1 for @$columns;
+            if ( ! exists $graphs_columns{dashes} ) {
+                infof("add new column 'dashes'");
+                $dbh->do(q{ALTER TABLE vrules ADD dashes VARCHAR(255) NOT NULL DEFAULT ''});
+            }
+            $dbh->commit;
+        }
+
+        # timestamp
+        {
+            $dbh->begin_work;
+            my $columns = $dbh->select_all(q{PRAGMA table_info("graphs")});
+            my %graphs_columns;
+            $graphs_columns{$_->{name}} = 1 for @$columns;
+            if ( ! exists $graphs_columns{timestamp} ) {
+                infof("add new column 'timestamp'");
+                $dbh->do(q{ALTER TABLE graphs ADD timestamp UNSIGNED INT DEFAULT NULL});
+            }
+            $dbh->commit;
+        }
+
         return;
     };
 }
@@ -257,7 +298,7 @@ sub get_by_id_for_rrdupdate {
 }
 
 sub update {
-    my ($self, $service, $section, $graph, $number, $mode, $color ) = @_;
+    my ($self, $service, $section, $graph, $number, $mode, $color, $timestamp ) = @_;
     my $dbh = $self->dbh;
     $dbh->begin_work;
 
@@ -274,8 +315,8 @@ sub update {
         if ( $mode ne 'modified' || ($mode eq 'modified' && $data->{number} != $number) ) {
             $color ||= $data->{color};
             $dbh->query(
-                'UPDATE graphs SET number=?, mode=?, color=?, updated_at=? WHERE id = ?',
-                $number, $mode, $color, time, $data->{id}
+                'UPDATE graphs SET number=?, mode=?, color=?, updated_at=?, timestamp=? WHERE id = ?',
+                $number, $mode, $color, time, $timestamp, $data->{id}
             );
         }
     }
@@ -283,10 +324,10 @@ sub update {
         my @colors = List::Util::shuffle(qw/33 66 99 cc/);
         $color ||= '#' . join('', splice(@colors,0,3));
         $dbh->query(
-            'INSERT INTO graphs (service_name, section_name, graph_name, number, mode, color, llimit, sllimit, created_at, updated_at) 
-                         VALUES (?,?,?,?,?,?,?,?,?,?)',
-            $service, $section, $graph, $number, $mode, $color, -1000000000, -100000 ,time, time
-        ); 
+            'INSERT INTO graphs (service_name, section_name, graph_name, number, mode, color, llimit, sllimit, created_at, updated_at, timestamp)
+                         VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+            $service, $section, $graph, $number, $mode, $color, -1000000000, -100000 , time, time, $timestamp
+        );
     }
 
     my $row = $self->dbh->select_row(
@@ -394,6 +435,28 @@ sub get_all_graph_all {
     my @ret = map { $self->inflate_row($_) } @$list;
     \@ret;
 }
+
+sub get_all_graph_as_tree {
+    my ( $self )  = @_;
+    my $graphs = $self->get_all_graph_name();
+    my %services;
+    my @services;
+    for my $row ( @$graphs ) {
+        push @{$services{$row->{service_name}}->{$row->{section_name}}}, $row; 
+    }
+    for my $service_name ( sort { lc($a) cmp lc($b) } keys %services ) {
+        my @sections = map {{
+            name => $_,
+            graphs => $services{$service_name}->{$_}
+        }} sort { lc($a) cmp lc($b) } keys %{$services{$service_name}};
+        push @services, {
+            name => $service_name,
+            sections => \@sections
+        }
+    }
+    return \@services;
+}
+
 
 sub remove {
     my ($self, $id ) = @_;
@@ -524,6 +587,83 @@ sub get_all_complex_graph_all {
     return [] unless $list;
     my @ret = map { $self->inflate_complex_row($_) } @$list;
     \@ret;
+}
+
+sub update_vrule {
+    my ($self, $graph_path, $time, $color, $desc, $dashes) = @_;
+
+    $self->dbh->query(
+        'INSERT INTO vrules (graph_path,time,color,description,dashes) values (?,?,?,?,?)',
+        $graph_path, $time, $color, $desc, $dashes,
+    );
+
+   my $row = $self->dbh->select_row(
+        'SELECT * FROM vrules WHERE graph_path = ? AND time = ? AND color = ? AND description = ? AND dashes = ?',
+        $graph_path, $time, $color, $desc, $dashes,
+    );
+
+    return $row;
+}
+
+# "$span" is a parameter named "t",
+# "$from" and "$to" are paramters same nameed.
+sub get_vrule {
+    my ($self, $span, $from, $to, $graph_path) = @_;
+
+    my($from_time, $to_time) = (0, time);
+    # same rule as GrowthForecast::RRD#calc_period
+    if ( $span eq 'all' ) {
+        $from_time = 0;
+        $to_time   = 4294967295; # unsigned int max
+    } elsif ( $span eq 'c' || $span eq 'sc' ) {
+        if ($from =~ /\A[1-9][0-9]*\z/) {
+            $from_time = $from;
+        } else {
+            $from_time = HTTP::Date::str2time($from);
+            die "invalid from date: $from" unless $from_time;
+        }
+        if ($to && $to =~ /\A[1-9][0-9]*\z/) {
+            $to_time = $to;
+        } else {
+            $to_time = $to ? HTTP::Date::str2time($to) : time;
+            die "invalid to date: $to" unless $to_time;
+        }
+        die "from($from) is newer than to($to)" if $from_time > $to_time;
+    } elsif ( $span eq 'h' || $span eq 'sh' ) {
+        $from_time = time -1 * 60 * 60 * 2;
+    } elsif ( $span eq 'n' || $span eq 'sn' ) {
+        $from_time = time -1 * 60 * 60 * 14;
+    } elsif ( $span eq 'w' ) {
+        $from_time = time -1 * 60 * 60 * 24 * 8;
+    } elsif ( $span eq 'm' ) {
+        $from_time = time -1 * 60 * 60 * 24 * 35;
+    } elsif ( $span eq 'y' ) {
+        $from_time = time -1 * 60 * 60 * 24 * 400;
+    } elsif ( $span eq '3d' ) {
+        $from_time = time -1 * 60 * 60 * 24 * 3;
+    } elsif ( $span eq '8h' ) {
+        $from_time = time -1 * 8 * 60 * 60;
+    } elsif ( $span eq '4h' ) {
+        $from_time = time -1 * 4 * 60 * 60;
+    } else {
+        $from_time = time -1 * 60 * 60 * 33; # 33 hours
+    }
+
+    my @vrules = ();
+
+    my @gp = split '/', substr($graph_path, 1), 3;
+    my $ph = ',?'x@gp;
+    my @path;
+    for (my $i=0; $i<@gp; $i++ ) {
+        push @path, "/".join("/",@gp[0..$i]); 
+    }
+    my $rows = $self->dbh->select_all(
+        'SELECT * FROM vrules WHERE (time BETWEEN ? and ?) AND graph_path in ("/"'.$ph.')',
+        $from_time, $to_time, @path
+    );
+    push @vrules, @$rows;
+
+    return @vrules;
 }
 
 1;

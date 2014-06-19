@@ -10,7 +10,9 @@ use GrowthForecast::Data;
 use GrowthForecast::RRD;
 use Log::Minimal;
 use Class::Accessor::Lite ( rw => [qw/short mysql data_dir float_number rrdcached disable_subtract/] );
-use CGI;
+use URI::Escape qw/uri_escape_utf8/;
+
+my $_JSON = JSON->new()->allow_blessed(1)->convert_blessed(1)->ascii(1);
 
 sub data {
     my $self = shift;
@@ -33,6 +35,7 @@ sub rrd {
         root_dir => $self->root_dir,
         rrdcached => $self->rrdcached,
         disable_subtract => $self->disable_subtract,
+        data => $self->data,
     );
     $self->{__rrd};
 }
@@ -90,7 +93,7 @@ sub delete_graph {
 
     $c->render_json({
         error => 0,
-        location => "".$c->req->uri_for(sprintf('/list/%s/%s', map { CGI::escape($c->stash->{graph}->{$_}) } qw/service_name section_name/))
+        location => "".$c->req->uri_for(sprintf('/list/%s/%s', map { uri_escape_utf8($c->stash->{graph}->{$_}) } qw/service_name section_name/))
     });
 };
 
@@ -100,7 +103,7 @@ sub delete_complex {
 
     $c->render_json({
         error => 0,
-        location => "". $c->req->uri_for(sprintf('/list/%s/%s', map { CGI::escape($c->stash->{complex}->{$_}) } qw/service_name section_name/))
+        location => "". $c->req->uri_for(sprintf('/list/%s/%s', map { uri_escape_utf8($c->stash->{complex}->{$_}) } qw/service_name section_name/))
     });
 };
 
@@ -127,14 +130,19 @@ get '/docs' => sub {
 
 get '/add_complex' => sub {
     my ( $self, $c )  = @_;
-    my $graphs = $self->data->get_all_graph_name();
-    $c->render('add_complex.tx',{ graphs => $graphs, disable_subtract => $self->disable_subtract });
+
+    $c->render('add_complex.tx',{ service_tree => $self->data->get_all_graph_as_tree(),
+                                  disable_subtract => $self->disable_subtract });
 };
 
 get '/edit_complex/:complex_id' => [qw/get_complex/] => sub {
     my ( $self, $c )  = @_;
-    my $graphs = $self->data->get_all_graph_name();
-    $c->render('edit_complex.tx',{ graphs => $graphs, disable_subtract => $self->disable_subtract });
+    my $path1 = $self->data->get_by_id($c->stash->{complex}->{'path-1'});
+    $c->stash->{complex}->{'path-1-service'} = $path1->{service_name};
+    $c->stash->{complex}->{'path-1-section'} = $path1->{section_name};
+
+    $c->render('edit_complex.tx',{service_tree => $self->data->get_all_graph_as_tree,
+                                  disable_subtract => $self->disable_subtract });
 };
 
 post '/delete_complex/:complex_id' => [qw/get_complex/] => sub {
@@ -262,7 +270,7 @@ post '/add_complex' => sub {
 
     $c->render_json({
         error => 0,
-        location => $c->req->uri_for('/list/'.CGI::escape($result->valid('service_name')).'/'.CGI::escape($result->valid('section_name')))->as_string,
+        location => $c->req->uri_for('/list/'.uri_escape_utf8($result->valid('service_name')).'/'.uri_escape_utf8($result->valid('section_name')))->as_string,
     });
 };
 
@@ -367,7 +375,7 @@ post '/edit_complex/:complex_id' => [qw/get_complex/] => sub {
 
     $c->render_json({
         error => 0,
-        location => $c->req->uri_for( sprintf '/view_complex/%s/%s/%s', CGI::escape($result->valid('service_name')), CGI::escape($result->valid('section_name')), CGI::escape($result->valid('graph_name')) )->as_string,
+        location => $c->req->uri_for( sprintf '/view_complex/%s/%s/%s', uri_escape_utf8($result->valid('service_name')), uri_escape_utf8($result->valid('section_name')), uri_escape_utf8($result->valid('graph_name')) )->as_string,
     });
 };
 
@@ -582,6 +590,12 @@ sub graph_validator {
                 [['CHOICE', qw/AVERAGE MAX/], 'invalid consolidation function'],
             ],
         },
+        'vrule_legend' => {
+            default => 1,
+            rule => [
+                [['CHOICE',qw/0 1/],'invalid vrule_legend flag'],
+            ],
+        },
     ];
 }
 
@@ -675,7 +689,8 @@ get '/{method:(?:xport|graph|summary)}/:service_name/:section_name/:graph_name' 
 
     if ( $c->args->{method} eq 'graph' ) {
         my ($img,$data) = $self->rrd->graph(
-            $c->stash->{graph}, $result->valid->as_hashref
+            $c->stash->{graph}, $result->valid->as_hashref,
+            $self->data,
         );
         $c->res->content_type('image/png');
         $c->res->body($img);
@@ -826,7 +841,7 @@ post '/edit/:service_name/:section_name/:graph_name' => [qw/get_graph/] => sub {
 
     $c->render_json({
         error => 0,
-        location => $c->req->uri_for( sprintf '/view_graph/%s/%s/%s', CGI::escape($result->valid('service_name')), CGI::escape($result->valid('section_name')), CGI::escape($result->valid('graph_name')) )->as_string
+        location => $c->req->uri_for( sprintf '/view_graph/%s/%s/%s', uri_escape_utf8($result->valid('service_name')), uri_escape_utf8($result->valid('section_name')), uri_escape_utf8($result->valid('graph_name')) )->as_string
     });
 };
 
@@ -848,7 +863,7 @@ post '/delete/:service_name/:section_name' => [qw/set_enable_short/] => sub {
 
     $c->render_json({
         error => 0,
-        location => "".$c->req->uri_for(sprintf('/list/%s', CGI::escape($c->args->{service_name})))
+        location => "".$c->req->uri_for(sprintf('/list/%s', uri_escape_utf8($c->args->{service_name})))
     });
 };
 
@@ -880,7 +895,24 @@ post '/api/:service_name/:section_name/:graph_name' => sub {
         'color' => {
             default => '',
             rule => [
-                [sub{ length($_[1]) == 0 || $_[1] =~ m!^#[0-9A-F]{6}$!i }, 'invalid color format'],
+                [sub{ length($_[1]) == 0 || $_[1] =~ m!^#[0-9A-F]{6,8}$!i }, 'invalid color format'],
+            ],
+        },
+        'timestamp' => {
+            default => undef,
+            rule => [
+                # The timestamp is UNIX epoch time
+                # The timestamp of rrdcreate must be larger than 315360000 because of its bug.
+                # cf. https://lists.oetiker.ch/pipermail/rrd-users/2008-January.txt
+                # 10 is because I subtract 10 from the timestamp for rrdcreate as rrdcreate's default does (now - 10s).
+                # cf. http://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html
+                [sub{ !defined($_[1]) || ($_[1] =~ m!^\-?[\d]+$! && $_[1] > 315360010) }, '"timestamp" must be a INT number and greater than 315360010"']
+            ],
+        },
+        'datetime' => {
+            default => undef,
+            rule => [
+                [ sub { my $t = HTTP::Date::str2time($_[1]); !defined($_[1]) || (defined($t) && $t > 315360010) }, "invalid datetime format or not later than '1979-12-30 00:00:10 UTC'" ]
             ],
         },
     ]);
@@ -896,16 +928,18 @@ post '/api/:service_name/:section_name/:graph_name' => sub {
 
     my $row;
     eval {
+        my $timestamp = $result->valid('timestamp') || HTTP::Date::str2time($result->valid('datetime'));
         $row = $self->data->update(
             $c->args->{service_name}, $c->args->{section_name}, $c->args->{graph_name},
             $result->valid('number'), $result->valid('mode'), $result->valid('color'),
-            $result->valid('description')
+            $timestamp,
         );
     };
     if ( $@ ) {
-        die sprintf "Error:%s %s/%s/%s => %s,%s,%s", 
+        die sprintf "Error:%s %s/%s/%s => %s,%s,%s,%s,%s",
             $@, $c->args->{service_name}, $c->args->{section_name}, $c->args->{graph_name},
-                $result->valid('number'), $result->valid('mode'), $result->valid('color');
+                $result->valid('number'), $result->valid('mode'), $result->valid('color'),
+                $result->valid('timestamp'), $result->valid('datetime');
     }
     
     my @descriptions = $c->req->param('description');
@@ -1075,6 +1109,11 @@ get '/json/list/all' => sub {
     $c->render_json( \@list );
 };
 
+get '/json/list/graph_tree' => sub {
+    my ( $self, $c )  = @_;
+    $c->render_json($self->data->get_all_graph_as_tree());
+};
+
 # TODO in create/edit, validations about json object properties, sub graph id existense, ....
 
 post '/json/create/complex' => sub {
@@ -1116,7 +1155,7 @@ post '/json/create/complex' => sub {
     );
     $c->render_json({
         error => 0,
-        location => $c->req->uri_for('/list/'.CGI::escape($spec->{service_name}).'/'.CGI::escape($spec->{section_name}))->as_string,
+        location => $c->req->uri_for('/list/'.uri_escape_utf8($spec->{service_name}).'/'.uri_escape_utf8($spec->{section_name}))->as_string,
     });
 };
 
@@ -1153,6 +1192,140 @@ post '/json/edit/{type:(?:graph|complex)}/:id' => sub {
         $self->data->update_complex( $id, $internal );
     }
     $c->render_json({ error => 0 });
+};
+
+post '/vrule/api/:service_name/:section_name/:graph_name' => sub {
+    my ( $self, $c )  = @_; $self->add_vrule($c);
+};
+post '/vrule/api/:service_name/:section_name' => sub {
+    my ( $self, $c )  = @_; $self->add_vrule($c);
+};
+post '/vrule/api/:service_name' => sub {
+    my ( $self, $c )  = @_; $self->add_vrule($c);
+};
+post '/vrule/api' => sub {
+    my ( $self, $c )  = @_; $self->add_vrule($c);
+};
+
+sub add_vrule {
+    my ( $self, $c )  = @_;
+    my $result = $c->req->validator([
+        'time' => {
+            default => time(),
+            rule => [
+                [sub {
+                     if ($_[1] !~ /\A[1-9][0-9]*\z/) {
+                         my $t = HTTP::Date::str2time($_[1])
+                             or return;
+                         $_[1] = $t;
+                     }
+                     return 1;
+                 }, 'epoch time or date string is required for "time"'],
+            ],
+        },
+        'color' => {
+            default => '#FF0000',
+            rule => [
+                [sub{ length($_[1]) == 0 || $_[1] =~ m!^#[0-9A-F]{6,8}$!i }, 'invalid color format'],
+            ],
+        },
+        'description' => {
+            default => '',
+            rule => [],
+        },
+        'dashes' => {
+            default => '',
+            rule => [],
+        },
+    ]);
+
+    if ( $result->has_error ) {
+        my $res = $c->render_json({
+            error => 1,
+            messages => $result->messages
+        });
+        $res->status(400);
+        return $res;
+    }
+
+    my $row;
+    eval {
+        my $graph_path = '/'.join('/', $c->args->{service_name}||(), $c->args->{section_name}||(), $c->args->{graph_name}||());
+        $row = $self->data->update_vrule(
+            $graph_path,
+            $result->valid('time'),
+            $result->valid('color'),
+            $result->valid('description'),
+            $result->valid('dashes'),
+        );
+    };
+    if ( $@ ) {
+        die sprintf "Error:%s %s/%s/%s => %s,%s",
+            $@, $c->args->{service_name}, $c->args->{section_name}, $c->args->{graph_name},
+                $result->valid('time'), $result->valid('color');
+    }
+
+    $c->render_json({error=>0, data => $row});
+};
+
+get '/vrule/summary/:service_name/:section_name/:graph_name' => sub {
+    my ( $self, $c )  = @_; $self->summarize_vrule($c);
+};
+get '/vrule/summary/:service_name/:section_name' => sub {
+    my ( $self, $c )  = @_; $self->summarize_vrule($c);
+};
+get '/vrule/summary/:service_name' => sub {
+    my ( $self, $c )  = @_; $self->summarize_vrule($c);
+};
+get '/vrule/summary' => sub {
+    my ( $self, $c )  = @_; $self->summarize_vrule($c);
+};
+
+sub summarize_vrule {
+    my ( $self, $c )  = @_;
+    my $result = $c->req->validator([
+        't' => {
+            default => 'all',
+            rule => [
+                [['CHOICE',qw/all y m w 3d s3d d sd 8h s8h 4h s4h h sh n sn c sc/],'invalid drawing term'],
+            ],
+        },
+        'from' => {
+            default => localtime(time-86400*8)->strftime('%Y/%m/%d %T'),
+            rule => [
+                [sub{ HTTP::Date::str2time($_[1]) }, 'invalid From datetime'],
+            ],
+        },
+        'to' => {
+            default => localtime()->strftime('%Y/%m/%d %T'),
+            rule => [
+                [sub{ HTTP::Date::str2time($_[1]) }, 'invalid To datetime'],
+            ],
+        },
+    ]);
+
+    if ( $result->has_error ) {
+        my $res = $c->render_json({
+            error => 1,
+            messages => $result->messages
+        });
+        $res->status(400);
+        return $res;
+    }
+
+    my $graph_path = '/'.join('/', $c->args->{service_name}||(), $c->args->{section_name}||(), $c->args->{graph_name}||());
+
+    my @vrules;
+    eval {
+        @vrules = $self->data->get_vrule($result->valid('t'), $result->valid('from'), $result->valid('to'), $graph_path);
+    };
+    if ( $@ ) {
+        die sprintf "Error:%s %s/%s/%s => %s,%s,%s",
+            $@, $c->args->{service_name}, $c->args->{section_name}, $c->args->{graph_name},
+                $result->valid('t'), $result->valid('from') , $result->valid('to');
+    }
+
+    $c->render_json(\@vrules);
 };
 
 1;

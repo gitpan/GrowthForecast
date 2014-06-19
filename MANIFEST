@@ -50,3 +50,5 @@ views/index.tx
 views/list.tx
 views/view.tx
 views/view_graph.tx
+docker/Dockerfile
+docker/README.md

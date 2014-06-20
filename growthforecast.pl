@@ -22,6 +22,7 @@ use Cwd;
 use File::Path qw/mkpath/;
 use Log::Minimal;
 use Pod::Usage;
+use POSIX qw//;
 
 my $port = 5125;
 my $host = 0;
@@ -43,8 +44,26 @@ GetOptions(
     'web-max-workers=i' => \my $web_max_workers,
     'rrdcached=s' => \my $rrdcached,
     'mount=s' => \my $mount,
+    'time-zone=s' => \my $timezone,
     "h|help" => \my $help,
+    'v|version' => \my $version,
 );
+
+if ( $timezone ) {
+    eval {
+        $ENV{TZ} = $timezone;
+        POSIX::tzset;
+    };
+    if ( $@ ) {
+        die "Failed timezone set to '$timezone': $@";
+    }
+}
+
+if ( $version ) {
+    print "GrowthForecast version $GrowthForecast::VERSION\n\n";
+    print "Try `growthforecast.pl --help` for more options.\n";
+    exit 0;
+}
 
 if ( $help ) {
     pod2usage(-verbose=>2,-exitval=>0);
@@ -317,6 +336,14 @@ See the manual of rrdcached for more details. Default does not use rrdcached.
 Provide GrowthForecast with specify url path.
 Default is empty ( provide GrowthForecast on root path )
 
+=item --time-zone
+
+Set the system time zone for GrowthForecast. Default is system timezone.
+
+=item -v --version
+
+Display version
+
 =item -h --help
 
 Display help
@@ -353,7 +380,7 @@ Sample GRANT statement
 Give USERNAME and PASSWORD to GrowthForecast by environment value
 
   $ MYSQL_USER=www MYSQL_PASSWORD=foobar growthforecast.pl \\
-      --data-dir /home/user/growthforeacst \\
+      --data-dir /home/user/growthforecast \\
       -with-mysql dbi:mysql:growthforecast;hostname=localhost 
 
 AUTHOR
